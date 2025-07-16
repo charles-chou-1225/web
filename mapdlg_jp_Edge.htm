@@ -1,0 +1,586 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+   <meta name="viewport" content="initial-scale=1.0, user-scalable=no">
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="IE=edge" /> 
+    <title>Google Maps Example</title>
+    <style>  
+      html, body {
+       height: 100%;
+        margin: 0;
+        padding: 0;
+      }    
+      #map {
+        height: 100%;
+      }
+    </style>
+</head>
+	<script src="http://maps.googleapis.com/maps/api/js?v=3.21&language=ja&key=AIzaSyCRilV2MKxDGGEUiBZ7L9Ep6Ud6Cyt0YaA&signed_in=true"></script>
+	 <script  src="http://ajax.aspnetcdn.com/ajax/jQuery/jquery-1.5.2.min.js"></script>  
+<body style="margin: 0px; padding: 0px;">
+    <div id="Position" style="position: absolute; z-index: 1000000; color: #FFFFFF; background-color: #FF0000;
+        left: 70; bottom: 5;">
+    </div>
+    <div id="map_canvas" style="width: 100%; height: 100%;">
+    </div>
+    <input type="hidden" id="map_lng" value="" />
+    <input type="hidden" id="map_lat" value="" />
+    <input type="hidden" id="offset_lng" value="" />
+    <input type="hidden" id="offset_lat" value="" />
+    <input type="hidden" id="map_status" value="stopped" />
+    <input type="hidden" id="SpeedBar" value="" />
+    <input type="hidden" id="AngleBar" value="" />
+    <input type="hidden" id="Index" value="" />
+    <input type="hidden" id="videoTime" value="" />
+    <input type="hidden" id="default_lng" value="0" />
+    <input type="hidden" id="default_lat" value="0" />
+
+  
+  
+    <script type="text/javascript">
+        var noInterNet;
+        var noInterNatMSG = "Internet connect fail!";
+        var pathCoordinates = [];
+        var poly;
+        var map;
+        var lng;
+        var lat;
+        var offset_lng;
+        var offset_lat;
+        var speed;
+        var angle;
+        var index = 0;
+        var firstpoint = 1;
+        var map_type;
+        var image_n;
+        var image_e;
+        var image_w;
+        var image_s;
+
+        var image_sw;
+        var image_se;
+        var image_nw;
+        var image_ne;
+
+        var image_nne;
+        var image_nee;
+        var image_sse;
+        var image_see;
+
+        var image_nnw;
+        var image_nww;
+        var image_ssw;
+        var image_sww;
+
+	var json_address ={
+      	    func:"0",
+	    status:"",
+	    address:""	
+	};
+
+       
+
+        (function() {
+
+            noInterNet = false;
+            if (setPic() == false) {                 
+                sendnoInterNet()
+                document.getElementById("map_canvas").innerHTML = noInterNatMSG;
+                noInterNet = true;
+                return;
+            }
+
+            try {
+                google.maps.Map.prototype.markers = new Array();
+
+                google.maps.Map.prototype.addMarker = function(marker) {
+                    this.markers[this.markers.length] = marker;
+                };
+
+                google.maps.Map.prototype.getMarkers = function() {
+                    return this.markers
+                };
+
+                google.maps.Map.prototype.clearMarkers = function() {
+                    for (var i = 0; i < this.markers.length; i++) {
+                        this.markers[i].setMap(null);
+                    }
+                };
+
+                google.maps.Map.prototype.delOneMarker = function() {
+                    if (this.markers.length > 0) {
+                        this.markers[this.markers.length - 1].setMap(null);
+                    }
+                };
+
+                google.maps.Map.prototype.clearPaths = function() {
+                    //alert(	this.markers.length);
+                    for (var i = 0; i < this.markers.length; i++) {
+                        this.markers[i].setMap(null);
+                    }
+                };
+            }
+            catch (e) {
+                //alert(e.message);
+                document.getElementById("map_canvas").innerHTML = noInterNatMSG;
+                sendnoInterNet()
+                noInterNet = true;
+                return;
+            }
+
+
+        })();
+
+        function createMarker(name, latlng) {
+            var marker = new google.maps.Marker({ position: latlng, map: map });
+            marker.setTitle(name);
+            return marker;
+        }
+
+        function createMarkerCar(name, latlng) {
+
+
+
+            var marker = new google.maps.Marker({ position: latlng, map: map });
+            marker.setTitle(name);
+            return marker;
+            
+            
+            if (angle > 349) {
+                marker.setIcon(image_n);
+            } else if (angle > 326) {
+                marker.setIcon(image_nnw);
+            } else if (angle > 304) {
+                marker.setIcon(image_nw);
+            } else if (angle > 281) {
+                marker.setIcon(image_nww);
+            } else if (angle > 259) {
+                marker.setIcon(image_w);
+            } else if (angle > 236) {
+                marker.setIcon(image_sww);
+            } else if (angle > 214) {
+                marker.setIcon(image_sw);
+            } else if (angle > 191) {
+                marker.setIcon(image_ssw);
+            } else if (angle > 169) {
+                marker.setIcon(image_s);
+            } else if (angle > 146) {
+                marker.setIcon(image_sse);
+            } else if (angle > 124) {
+                marker.setIcon(image_se);
+            } else if (angle > 101) {
+                marker.setIcon(image_see);
+            } else if (angle > 79) {
+                marker.setIcon(image_e);
+            } else if (angle > 56) {
+                marker.setIcon(image_nee);
+            } else if (angle > 34) {
+                marker.setIcon(image_ne);
+            } else if (angle > 11) {
+                marker.setIcon(image_nne);
+            } else {
+                marker.setIcon(image_n);
+            }
+            return marker;
+        }
+
+
+
+        var timelinelist;
+        function clearPaths() 
+        {
+           // alert("clearPaths");
+        }
+        
+        function clearBaseLine() 
+        {
+        
+			//alert("clearBaseLine()");
+        	oldlat=-360;
+			oldlng=-360;
+            try {
+                var len = poly.getPath().getLength();
+                for (var i = 0; i < len; i++) {
+                    poly.getPath().removeAt(0);
+                }
+            }
+            catch (e)
+	        { }
+            try {
+                len = timelinelist.length;
+
+                for (var i = 0; i < len; i++) {
+                    var temp = timelinelist.pop();
+                    temp.getPath().removeAt(0);
+                    temp.getPath().removeAt(1);
+                }
+            }
+            catch (e) {
+            }
+        }
+
+        var oldlat;
+        var oldlng;
+        function getMap() {			
+            var FUHO;
+            try {
+                FUHO = new google.maps.LatLng($("#default_lat").val(), $("#default_lng").val());
+
+                var myOptions = {
+                    zoom: 18,
+                    center: FUHO,
+                    scrollwheel: false,    								
+                    mapTypeId: google.maps.MapTypeId.ROADMAP,
+                     streetViewControl: false
+                };
+                                
+                var tempMap = new google.maps.Map(document.getElementById("map_canvas"), myOptions);             
+                
+                return tempMap;
+            }
+            catch (e) {
+
+                return null; //getMap();
+            }
+        }
+
+        function setMap() {           
+            lng = document.getElementById("map_lng").value;
+            lat = document.getElementById("map_lat").value;
+
+			if (map == null)
+				map = getMap();
+
+            if (map == null) {
+                return false;
+            }  
+
+
+            // We create pathCoordinates as an MVCArray so we can
+            // manipulate it using the insertAt() method
+            pathCoordinates = new google.maps.MVCArray();
+
+            var polyOptions = {
+                path: pathCoordinates,
+                strokeColor: '#FF0000',
+                strokeOpacity: 0.5,
+                strokeWeight: 1
+            }
+
+            poly = new google.maps.Polyline(polyOptions);
+            poly.setMap(map);
+
+
+
+            timelinelist = new Array(0);
+            return true;
+
+        }    
+
+	
+	function refreshEdgeMap(status,lat,lng,offset_lat,offset_lng,videoTime) {            
+	    document.getElementById("map_status").value= status;
+            document.getElementById("map_lng").value = lng; 
+            document.getElementById("map_lat").value= lat;
+            document.getElementById("offset_lng").value = offset_lng;
+            document.getElementById("offset_lat").value = offset_lat;	
+	    document.getElementById("videoTime").value = videoTime;
+	    refreshMap();
+		
+	}
+        // Refresh map function
+        function refreshMap() {
+          
+            if (noInterNet == true)
+                return;
+
+            try {
+                var stats = document.getElementById("map_status").value;
+                var newlng = parseFloat(document.getElementById("map_lng").value);
+                var newlat = parseFloat(document.getElementById("map_lat").value);
+                var offset_lng = parseFloat(document.getElementById("offset_lng").value);
+                var offset_lat = parseFloat(document.getElementById("offset_lat").value);
+
+                var videoTime = document.getElementById("videoTime").value;
+
+                // speed info
+                speed = document.getElementById('SpeedBar').value;
+                angle = document.getElementById('AngleBar').value;
+
+                if (stats == "clear") {
+                    map.clearMarkers();
+                    clearPaths();
+                    firstpoint = 1;
+                    lng = 0; lat = 0;
+                    return;
+                }
+                if (stats != "running" && stats != "BaseLine") {
+                    
+                    
+                    if (firstpoint == 1) {
+                        return;
+                    }
+                    var newpoint;
+                    if ((newlng == 0) || (newlat == 0)) {
+                        newpoint = new google.maps.LatLng(lat, lng);
+                    } else {
+                        newpoint = new google.maps.LatLng(newlat, newlng);
+                    }
+                    map.addMarker(createMarker("End Point", newpoint));
+                    firstpoint = 1;
+                    lng = 0; lat = 0;
+                    return;
+                }
+                if ((newlng == 0.0) && (newlat == 0.0)) {
+                    return;
+                }
+
+                //Client is changed...
+                var opt = document.getElementById("Index").value;
+                if (index != opt) {
+                    index = opt;
+                    firstpoint = 1;
+                }
+                if (map_type != map.getMapTypeId()) {
+                    if ((map_type == google.maps.MapTypeId.ROADMAP && map.getMapTypeId() != google.maps.MapTypeId.TERRAIN)
+						 || (map_type == google.maps.MapTypeId.SATELLITE && map.getMapTypeId() != google.maps.MapTypeId.HYBRID)
+						 || (map_type == google.maps.MapTypeId.HYBRID && map.getMapTypeId() != google.maps.MapTypeId.SATELLITE)
+						 || (map_type == google.maps.MapTypeId.TERRAIN && map.getMapTypeId() != google.maps.MapTypeId.ROADMAP)) {
+                        if ((offset_lng != 0) || (offset_lat != 0)) {
+                            firstpoint = 1;
+                        }
+                    }
+                    map_type = map.getMapTypeId();
+                }
+                if ((map_type == google.maps.MapTypeId.ROADMAP) || (map_type == google.maps.MapTypeId.TERRAIN)) {
+                    newlng += offset_lng;
+                    newlat += offset_lat;
+                    //alert("offset_lng = "+offset_lng.toString()+" offset_lat = "+offset_lat.toString());
+                }
+                if ((firstpoint != 1) && (newlng == lng) && (newlat == lat)) {
+                    return;
+                }
+                lng = newlng;
+                lat = newlat;
+                //alert("lng = "+lng.toString()+" lat = "+lat.toString());
+
+                //start mark
+                var newpoint = new google.maps.LatLng(newlat, newlng);
+
+              
+                if (firstpoint == 1) {
+
+                    firstpoint = 0;
+                    map.clearMarkers();
+
+
+                    clearPaths();
+                    /*
+                    map.addMarker(createMarker("Start Point",newpoint));
+                    */
+                    oldlat = newlat;
+                    oldlng = newlng;
+                } 
+                else 
+                {
+
+
+                }
+
+
+
+                if(stats == "BaseLine")
+                {  
+					if((oldlat!=-360 &&oldlng!=-360 )&& (newlat!=-360&&newlng!=-360 ))
+					{
+						
+						//var path = poly.getPath();
+						//if(0)
+						//if (path.length > 0) 
+						{
+							// alert(" test 1 ["+newlat+","+newlng+"]["+oldlat+","+oldlng+"]");
+
+
+							var timeLineCoords = [
+								new google.maps.LatLng(oldlat, oldlng),
+								new google.maps.LatLng(newlat, newlng)
+							];
+							oldlat = newlat;
+							oldlng = newlng;
+
+
+							var timePolyOptions = {
+								path: timeLineCoords,
+								strokeColor: '#FF0000',
+								strokeOpacity: 0.5,
+
+								offset: '100%',
+								strokeWeight: 7,
+								map: map,
+								videoTime: videoTime
+							};
+
+
+							var timeline = new google.maps.Polyline(timePolyOptions);
+							
+							google.maps.event.addListener(timeline, 'click', sendTime);
+							timelinelist.push(timeline);
+							timeline.setMap(map);
+							}
+							/**/
+							//path.insertAt(pathCoordinates.length, newpoint);
+							map.panTo(newpoint);
+		                }
+		                else
+		                {		          
+		                
+							//alert("new "+newlat+"   "+newlng);      
+							oldlat = newlat;
+							oldlng = newlng;
+					
+		                }
+
+
+
+                         
+                    }    
+                    if(stats == "running")
+                    {             
+                    //    alert("add mark");
+                        map.delOneMarker();
+                        map.addMarker(createMarkerCar("Car Point", newpoint)); 
+                        map.panTo(newpoint);
+                    }
+                   
+                } catch (e) {
+                    noInterNet = true;
+                   // alert(e.message);
+                    map.delOneMarker();
+                }
+           
+            return;
+        }
+
+
+
+
+        function sendTime() {
+            try {
+                json_address.func = "3";
+    	        json_address.status = "";
+  	        json_address.address =  this.videoTime;
+		window.chrome.webview.postMessage(json_address);
+                //external.OnSelectRoad(this.videoTime);
+                clearPaths();
+            }
+            catch (e) {
+                //不支援 MAP ROUTER VIDEO
+
+            }
+            //alert(this.videoTime+"!");
+        }
+        function sendnoInterNet() {
+            //alert("sendnoInterNet" );
+            try {
+               // external.OnSelectRoad(-1);
+                json_address.func = "2";
+    	        json_address.status = "";
+  	        json_address.address =  "";
+		window.chrome.webview.postMessage(json_address);
+                clearPaths();
+            }
+            catch (e) {
+                //不支援 MAP ROUTER VIDEO
+            }
+        }
+
+
+
+        function setPic() {
+            try {
+                map_type = google.maps.MapTypeId.ROADMAP;
+			} catch (e) {
+                return true;
+            }
+			return true;
+			
+			
+
+
+            
+            //alert("setPic ok");
+            return true;
+        }
+        function JSGetAdress( lat, lng)//devid is index
+        {
+            try {              
+                var latlng = new google.maps.LatLng(lat, lng);
+                var geocoder = new google.maps.Geocoder();
+                var address = "";
+                var myret = false;
+                geocoder.geocode({ 'latLng': latlng }, function(results, ret) {                    
+                    if (ret == google.maps.GeocoderStatus.OK) {
+                        if (results[0]) {
+                            s = "";
+                            idx = 0
+                            for (i = results[0].address_components.length - 3; i > 0; i--) {
+                                s += results[0].address_components[i].long_name;
+                                idx++;
+                                if (idx >= 4)
+                                    break;
+                            }                          
+                            //address = s; //results[2].formatted_address;
+                            //CallDlgFunc(ret, address);
+			    json_address.func = "1";
+			    json_address.status = ret;
+			    json_address.address =  s;
+			 //   alert(s);
+			    window.chrome.webview.postMessage(json_address);	 
+                           // alert(json_address);
+
+                           // alert(s);
+                           // alert(ret);
+                            myret = true;
+                        }
+                        else {
+                            //alert("failed");
+                            //address = "Unknown Address1";
+                            //CallDlgFunc(ret, address);
+			    json_address.func = "1";
+			    json_address.status = ret;
+			    json_address.address =  "Unknown Address1";
+			    window.chrome.webview.postMessage(json_address);	 
+                            myret = false;
+                        }
+                    }
+                    else {                        
+                        address = "Unknown Address2";
+			json_address.func = "1";
+			json_address.status = ret;
+			json_address.address =  "Unknown Address2";
+			window.chrome.webview.postMessage(json_address);
+                        //CallDlgFunc(ret, address);
+                    }
+                });
+                return myret;
+            } catch (e) {
+                ret=e;
+	//	alert(e.message);
+                address = "Unknown Address3";
+               // CallDlgFunc(ret,address);
+            }
+        }
+
+        function CallDlgFunc( status,address) {
+            try {
+                external.CallDlgFunc( status,address);
+            }
+            catch (e) {
+            }
+        }
+	
+    </script>
+
+</body>
+</html>
